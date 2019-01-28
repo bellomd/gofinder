@@ -1,1 +1,1 @@
-Go finder is a command line application for search word(s) or sentence(s) within the given file(s)
+Go finder is a command line application for searching word(s) or sentence(s) within the given file(s)
