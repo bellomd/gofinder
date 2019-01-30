@@ -44,6 +44,7 @@ func search(words []string, filename string, ch chan *result.SearchResult, sensi
 		}
 		return
 	}
+	defer file.Close()
 
 	results := make(map[string]int)
 

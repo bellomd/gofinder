@@ -40,23 +40,22 @@ func main() {
 		ch := make(chan *result.SearchResult)
 		util.SearchAsync(words, filenames, ch, *c)
 
-		var processedCount int
-		var exitCount = len(filenames)
-		if len(words) > exitCount {
-			exitCount = len(words)
+		var channelBuffer = len(filenames)
+		if len(words) > channelBuffer {
+			channelBuffer = len(words)
 		}
 		for {
 			result, ok := <-ch
 			if !ok {
 				break
 			}
-			processedCount++
+			channelBuffer--
 			if result.Err != nil {
 				fmt.Printf("\nError: %s\n", result.Err)
 				continue
 			}
 			fmt.Printf("word: %s\t counts: %d\t filename: %s\n", result.Word, result.Count, result.Filename)
-			if processedCount == exitCount {
+			if channelBuffer == 0 {
 				break
 			}
 		}
