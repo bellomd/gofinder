@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"knackbrain.com/gofinder/result"
 
@@ -15,12 +14,11 @@ import (
 )
 
 const (
-	message        = "Please enter your search!"
-	searchCreteria = "Words, filenames or urls cannot be empty!"
+	message = "Please enter your search!"
 )
 
-var s = flag.Bool("s", true, "Should the search be single sentence or list of words")
-var c = flag.Bool("c", true, "Should the be case sensitive or not!")
+var s = flag.Bool("s", true, "Single sentence or list of words")
+var c = flag.Bool("c", true, "Case sensitive or insensitive!")
 
 func main() {
 
@@ -30,55 +28,40 @@ func main() {
 		fmt.Println(message)
 		os.Exit(1)
 	}
+	// Searches that return channels to read the result.
+	processChannels(util.Async(flag.Args(), *c, *s))
 
-	words, filenames, urls := extract(flag.Args())
-	if len(words) <= 0 || (len(filenames) <= 0 && len(urls) <= 0) {
-		panic(searchCreteria)
-	}
+	// Searches that return slices of results.
+	//processResults(util.Sync(flag.Args(), *c, *s))
+}
 
-	if len(filenames) > 0 {
-		ch := make(chan *result.SearchResult)
-		util.SearchAsync(words, filenames, ch, *c)
-
-		var channelBuffer = len(filenames)
-		if len(words) > channelBuffer {
-			channelBuffer = len(words)
-		}
-		for {
-			result, ok := <-ch
-			if !ok {
-				break
-			}
-			channelBuffer--
-			if result.Err != nil {
-				fmt.Printf("\nError: %s\n", result.Err)
-				continue
-			}
+func processResults(r []*result.SearchResult) {
+	for _, result := range r {
+		if result.Err != nil {
+			fmt.Printf("Error => %s\n", result.Err)
+		} else {
 			fmt.Printf("word: %s\t counts: %d\t filename: %s\n", result.Word, result.Count, result.Filename)
-			if channelBuffer == 0 {
-				break
-			}
 		}
-		close(ch)
 	}
 }
 
-func extract(args []string) (words, filenames, urls []string) {
-
-	words = make([]string, 0)
-	filenames = make([]string, 0)
-	urls = make([]string, 0)
-
-	for _, arg := range args {
-		if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
-			urls = append(urls, arg)
-			continue
+func processChannels(chs []chan *result.SearchResult) {
+	for {
+		closedChannel := 0
+		for _, channel := range chs {
+			result, ok := <-channel
+			if !ok {
+				closedChannel++
+				continue
+			}
+			if result.Err != nil {
+				fmt.Printf("Error => %s\n", result.Err)
+			} else {
+				fmt.Printf("word: %s\t counts: %d\t filename: %s\n", result.Word, result.Count, result.Filename)
+			}
 		}
-		if strings.LastIndex(arg, ".") > -1 {
-			filenames = append(filenames, arg)
-			continue
+		if closedChannel == len(chs) {
+			break
 		}
-		words = append(words, arg)
 	}
-	return
 }

@@ -13,23 +13,33 @@ import (
 )
 
 // SearchAsync searches for the given word or string in a local file.
-func SearchAsync(words []string, files []string, ch chan *result.SearchResult, sensitive bool) {
-	for _, filename := range files {
-		go search(words, filename, ch, sensitive)
-	}
+func SearchAsync(words []string, filename string, ch chan *result.SearchResult, sensitive bool) {
+	go search(words, filename, ch, sensitive)
 }
 
 // SearchSync searches for the given word or string in a local file.
 func SearchSync(words []string, files []string, sensitive bool) (r []*result.SearchResult) {
 
-	var channel chan *result.SearchResult
-
+	var channels []chan *result.SearchResult
 	for _, filename := range files {
+		channel := make(chan *result.SearchResult, BufferSize)
+		channels = append(channels, channel)
 		go search(words, filename, channel, sensitive)
 	}
 
-	for ch := range channel {
-		r = append(r, ch)
+	for {
+		closedChannel := 0
+		for _, channel := range channels {
+			result, ok := <-channel
+			if !ok {
+				closedChannel++
+				continue
+			}
+			r = append(r, result)
+		}
+		if closedChannel == len(channels) {
+			break
+		}
 	}
 	return
 }
@@ -42,6 +52,7 @@ func search(words []string, filename string, ch chan *result.SearchResult, sensi
 			Filename: filename,
 			Err:      err,
 		}
+		close(ch)
 		return
 	}
 	defer file.Close()
@@ -62,6 +73,7 @@ func search(words []string, filename string, ch chan *result.SearchResult, sensi
 			Err:      nil,
 		}
 	}
+	close(ch)
 }
 
 // searchWord search the given slice of words from the given line of string

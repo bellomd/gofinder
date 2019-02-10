@@ -10,12 +10,12 @@ import (
 
 // URLSearchAsync searches for the give words in the given urls asynchronously and add the result to the given
 // channel, the search can be case sensitive or case insensitive.
-func URLSearchAsync(words []string, urls []string, ch chan *result.SearchResult, sensitive bool) {
-
+func URLSearchAsync(words []string, url string, ch chan *result.SearchResult, sensitive bool) {
+	panic("Not implemented!")
 }
 
 // URLSearchSync searches for the give words in the given urls synchronously and return the result
 // to the client.
-func URLSearchSync(words []string, urls []string, sensitive bool) (r []*result.SearchResult) {
-	return
+func URLSearchSync(words []string, url string, sensitive bool) (r []*result.SearchResult) {
+	panic("Not implemented!")
 }
