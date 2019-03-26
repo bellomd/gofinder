@@ -84,7 +84,7 @@ func searchWord(words []string, line string, results map[string]int, sensitive b
 		if sensitive {
 			results[word] += strings.Count(line, word)
 		} else {
-			results[word] += strings.Count(strings.ToUpper(line), strings.ToUpper(word))
+			results[word] += strings.Count(strings.ToLower(line), strings.ToLower(word))
 		}
 	}
 }
